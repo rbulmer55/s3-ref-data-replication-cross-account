@@ -1,0 +1,14 @@
+{
+	"stores": [
+		{
+			"storeId": "1",
+			"storeLocation": "Newcastle-Upon-Tyne",
+			"storePrefix": "NCL"
+		},
+		{
+			"storeId": "2",
+			"storeLocation": "Durham",
+			"storePrefix": "DUR"
+		}
+	]
+}
