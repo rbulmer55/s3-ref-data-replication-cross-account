@@ -2,26 +2,65 @@ import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as iam from 'aws-cdk-lib/aws-iam';
-import { RemovalPolicy } from 'aws-cdk-lib';
-import { ArnPrincipal, ManagedPolicy } from 'aws-cdk-lib/aws-iam';
+import { CfnOutput, Fn, RemovalPolicy } from 'aws-cdk-lib';
+import { ManagedPolicy } from 'aws-cdk-lib/aws-iam';
+import * as secretsManager from 'aws-cdk-lib/aws-secretsmanager';
+import { SecretsManager } from 'aws-sdk';
 
-interface CustomProps extends cdk.StackProps {
-	replicationRoleArn: string;
-	replicationBuckets: s3.IBucket[];
-}
-
-const orgId = 'o-abrfjp2g8q';
+const sm = new SecretsManager();
 
 export class StatefulS3ReplicationDataStackServiceA extends cdk.Stack {
 	public readonly uploadBucket: s3.Bucket;
 	public readonly masterBucket: s3.Bucket;
 
-	constructor(scope: Construct, id: string, props?: CustomProps) {
+	constructor(scope: Construct, id: string, props?: cdk.StackProps) {
 		super(scope, id, props);
 
-		if (!props?.replicationBuckets.length) {
-			throw new Error('No Replication buckets Specified');
+		// Get Bucket B from Secrets Manager and Bucket ARN
+		const serviceBAccountId = process.env.SERVICE_B_ACCOUNT;
+		if (!serviceBAccountId) {
+			throw new Error('Service B account id environment not set.');
 		}
+		// In production set secret arns in parameter store rather than Env vars
+		const secretBucketBName = process.env.SERVICE_B_BUCKET_SECRET_NAME;
+		if (!secretBucketBName) {
+			throw new Error('Secret Bucket name for service B environment not set.');
+		}
+		const serviceBBucketArn = secretsManager.Secret.fromSecretCompleteArn(
+			this,
+			'replication-b-bucket-arn-secret',
+			`arn:aws:secretsmanager:eu-west-1:${serviceBAccountId}:secret:${secretBucketBName}`
+		).secretValue.unsafeUnwrap();
+
+		const replicationBucketB = s3.Bucket.fromBucketArn(
+			this,
+			'service-b-bucket',
+			serviceBBucketArn
+		);
+
+		// Get Bucket C from Secrets Manager and Bucket ARN
+		const serviceCAccountId = process.env.SERVICE_C_ACCOUNT;
+		if (!serviceCAccountId) {
+			throw new Error('Service C account id environment not set.');
+		}
+		// In production set secret arns in parameter store rather than Env Vars
+		const secretBucketCName = process.env.SERVICE_C_BUCKET_SECRET_NAME;
+		if (!secretBucketCName) {
+			throw new Error('Secret Bucket name for service C environment not set.');
+		}
+		const serviceCBucketArn = secretsManager.Secret.fromSecretCompleteArn(
+			this,
+			'replication-c-bucket-arn-secret',
+			`arn:aws:secretsmanager:eu-west-1:${serviceBAccountId}:secret:${secretBucketBName}`
+		).secretValue.unsafeUnwrap();
+
+		const replicationBucketC = s3.Bucket.fromBucketArn(
+			this,
+			'service-c-bucket',
+			serviceCBucketArn
+		);
+
+		const replicationBuckets = [replicationBucketB, replicationBucketC];
 
 		const uploadBucket = new s3.Bucket(this, 'upload-bucket', {
 			objectOwnership: s3.ObjectOwnership.BUCKET_OWNER_ENFORCED,
@@ -39,18 +78,38 @@ export class StatefulS3ReplicationDataStackServiceA extends cdk.Stack {
 			encryption: s3.BucketEncryption.S3_MANAGED,
 			versioned: true,
 			removalPolicy: RemovalPolicy.DESTROY,
-			bucketName: 's3-euw1-rb-2023-master-bucket',
 		});
 		this.masterBucket = masterBucket;
 
-		const replicationRole = iam.Role.fromRoleName(
+		const sharedAccountId = process.env.SHARED_ACCOUNT;
+		if (!sharedAccountId) {
+			throw new Error('Shared account id environment not set.');
+		}
+		// In production set secret arns in parameter store in the accounts required
+		const secretRoleName = process.env.ROLE_SECRET_NAME;
+		if (!secretRoleName) {
+			throw new Error('Secret role name environment not set.');
+		}
+		const replicationRoleArn = secretsManager.Secret.fromSecretCompleteArn(
 			this,
-			'replication-role',
-			'iam-euw1-rb-2023-data-rep-role'
+			'replication-role-arn-secret',
+			`arn:aws:secretsmanager:eu-west-1:${sharedAccountId}:secret:${secretRoleName}`
+		).secretValue.unsafeUnwrap();
+
+		//Here the role is in the same account as the source bucket
+		const replicationRole = iam.Role.fromRoleArn(
+			this,
+			'rep-role',
+			'arn:aws:iam::xxx:role/service-role/xxx'
 		);
+		// const replicationRole = iam.Role.fromRoleArn(
+		// 	this,
+		// 	'replication-role',
+		// 	replicationRoleArn
+		// );
 
 		const destinationBucketStatements: iam.PolicyStatement[] =
-			props.replicationBuckets.map((destinationBucket) => {
+			replicationBuckets.map((destinationBucket) => {
 				return new iam.PolicyStatement({
 					resources: [destinationBucket.arnForObjects('*')],
 					actions: [
@@ -60,51 +119,36 @@ export class StatefulS3ReplicationDataStackServiceA extends cdk.Stack {
 						's3:GetObjectVersionTagging',
 						's3:ObjectOwnerOverrideToBucketOwner',
 					],
-					conditions: {
-						'ForAllValues:StringEquals': {
-							'aws:PrincipalOrgID': orgId,
-						},
-					},
 				});
 			});
 
-		replicationRole.addManagedPolicy(
-			new ManagedPolicy(this, 'ammended-rep-role-policy', {
-				statements: [
-					new iam.PolicyStatement({
-						resources: [masterBucket.bucketArn],
-						actions: ['s3:GetReplicationConfiguration', 's3:ListBucket'],
-						conditions: {
-							'ForAllValues:StringEquals': {
-								'aws:PrincipalOrgID': orgId,
-							},
-						},
-					}),
-					new iam.PolicyStatement({
-						resources: [masterBucket.arnForObjects('*')],
-						actions: [
-							's3:GetObjectVersion',
-							's3:GetObjectVersionAcl',
-							's3:GetObjectVersionForReplication',
-							's3:GetObjectLegalHold',
-							's3:GetObjectVersionTagging',
-							's3:GetObjectRetention',
-						],
-						conditions: {
-							'ForAllValues:StringEquals': {
-								'aws:PrincipalOrgID': orgId,
-							},
-						},
-					}),
-					...destinationBucketStatements,
-				],
-			})
-		);
+		const updatedPolicy = new ManagedPolicy(this, 'ammended-rep-role-policy', {
+			statements: [
+				new iam.PolicyStatement({
+					resources: [masterBucket.bucketArn],
+					actions: ['s3:GetReplicationConfiguration', 's3:ListBucket'],
+				}),
+				new iam.PolicyStatement({
+					resources: [masterBucket.arnForObjects('*')],
+					actions: [
+						's3:GetObjectVersion',
+						's3:GetObjectVersionAcl',
+						's3:GetObjectVersionForReplication',
+						's3:GetObjectLegalHold',
+						's3:GetObjectVersionTagging',
+						's3:GetObjectRetention',
+					],
+				}),
+				...destinationBucketStatements,
+			],
+		});
+
+		updatedPolicy.attachToRole(replicationRole);
 
 		const replicationConfiguration: s3.CfnBucket.ReplicationConfigurationProperty =
 			{
-				role: replicationRole.roleArn,
-				rules: props.replicationBuckets.map(
+				role: replicationRoleArn,
+				rules: replicationBuckets.map(
 					(destinationBucket, index): s3.CfnBucket.ReplicationRuleProperty => {
 						return {
 							destination: {
@@ -115,7 +159,6 @@ export class StatefulS3ReplicationDataStackServiceA extends cdk.Stack {
 								 * accessControlTranslation: { owner: 'account-name' },
 								 */
 								account: destinationBucket.env.account,
-								//accessControlTranslation: {owner: destinationBucket.}
 							},
 							status: 'Enabled',
 							priority: index + 1,

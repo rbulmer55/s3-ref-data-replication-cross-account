@@ -9,10 +9,10 @@
 		"watch": "tsc -w",
 		"test": "jest",
 		"cdk": "cdk",
-		"deploy": "npm run deploy-account-c && npm run deploy-account-b && npm run deploy-account-a",
-		"deploy-account-a": "cdk deploy --profile primary S3ReplicationDataStackStatefulA S3ReplicationDataStackStatelessA --exclusively",
-		"deploy-account-b": "cdk deploy --profile serviceone S3ReplicationDataStackStatefulB --exclusively",
-		"deploy-account-c": "cdk deploy --profile servicetwo S3ReplicationDataStackStatefulC --exclusively"
+		"deploy-shared": "ORG_ID=o-x  cdk deploy --profile primary S3ReplicationDataStackShared",
+		"deploy-account-b": "ORG_ID=o-x SHARED_ACCOUNT=xxx ROLE_SECRET_NAME=xxx cdk deploy --profile serviceone S3ReplicationDataStackStatefulB --exclusively",
+		"deploy-account-c": "ORG_ID=o-x SHARED_ACCOUNT=xxx ROLE_SECRET_NAME=xxx cdk deploy --profile servicetwo S3ReplicationDataStackStatefulC --exclusively",
+		"deploy-account-a": "ORG_ID=o-x SHARED_ACCOUNT=xxx ROLE_SECRET_NAME=xxx SERVICE_B_ACCOUNT=xxx SERVICE_B_BUCKET_SECRET_NAME=xxx SERVICE_C_ACCOUNT=xxx SERVICE_C_BUCKET_SECRET_NAME=xxx cdk deploy --profile primary S3ReplicationDataStackStatefulA S3ReplicationDataStackStatelessA --exclusively"
 	},
 	"devDependencies": {
 		"@types/aws-lambda": "^8.10.115",

@@ -2,7 +2,6 @@
 import 'source-map-support/register';
 
 import * as cdk from 'aws-cdk-lib';
-import * as s3 from 'aws-cdk-lib/aws-s3';
 
 //Stateful
 import { StatefulS3ReplicationDataStackServiceA } from '../stateful/service-a/service-a-stateful';
@@ -17,37 +16,26 @@ const app = new cdk.App();
 
 const sharedStack = new StatefulS3ReplicationDataStackShared(
 	app,
-	'S3ReplicationDataStackStatefulShared',
-	{
-		env: { account: '' },
-	}
+	'S3ReplicationDataStackShared',
+	{}
 );
 
 const stackB = new StatefulS3ReplicationDataStackServiceB(
 	app,
 	'S3ReplicationDataStackStatefulB',
-	{
-		replicationRoleArn: sharedStack.roleArn,
-		env: { account: '' },
-	}
+	{}
 );
+
 const stackC = new StatefulS3ReplicationDataStackServiceC(
 	app,
 	'S3ReplicationDataStackStatefulC',
-	{
-		replicationRoleArn: sharedStack.roleArn,
-		env: { account: '' },
-	}
+	{}
 );
 
 const statefulA = new StatefulS3ReplicationDataStackServiceA(
 	app,
 	'S3ReplicationDataStackStatefulA',
-	{
-		replicationBuckets: [stackB.replicationBucket, stackC.replicationBucket],
-		replicationRoleArn: sharedStack.roleArn,
-		env: { account: '' },
-	}
+	{}
 );
 
 new StatelessS3ReplicationDataStackServiceA(
@@ -56,6 +44,5 @@ new StatelessS3ReplicationDataStackServiceA(
 	{
 		uploadBucket: statefulA.uploadBucket,
 		masterBucket: statefulA.masterBucket,
-		env: { account: '' },
 	}
 );

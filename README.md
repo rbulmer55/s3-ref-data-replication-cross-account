@@ -12,6 +12,29 @@ Service A will cleanse and validate the data so even if the actor uploads a corr
 
 ![s3-replication-image](./docs//s3-replication-img.png)
 
+## Replication Role
+
+The Replication role requires the replication buckets (destination buckets) to exist for the ARN to be used in the roles policy statement.
+
+Also each bucket policy on the destination bucket requires the Replication role ARN on their bucket policy.
+
+Therefore we have split the stacks in CDK out to a shared stack which deploys the role and stores its ARN in secrets manager.Then Stack B and C can use the ARN in their bucket policies. Stack A can use the ARN also from secrets manager to update the managed policy once Stack B and C have been deployed.
+
+![s3-replication-role-image](./docs//s3-replication-role-img.png)
+
+## Deployment
+
+Run the scripts in order- Shared, Account C, Account B, Account A
+
+```
+Scripts:{
+        "deploy-shared": "ORG_ID=o-x  cdk deploy --profile primary S3ReplicationDataStackShared",
+		"deploy-account-b": "ORG_ID=o-x SHARED_ACCOUNT=xxx ROLE_SECRET_NAME=xxx cdk deploy --profile serviceone S3ReplicationDataStackStatefulB --exclusively",
+		"deploy-account-c": "ORG_ID=o-x SHARED_ACCOUNT=xxx ROLE_SECRET_NAME=xxx cdk deploy --profile servicetwo S3ReplicationDataStackStatefulC --exclusively",
+		"deploy-account-a": "ORG_ID=o-x SHARED_ACCOUNT=xxx ROLE_SECRET_NAME=xxx SERVICE_B_ACCOUNT=xxx SERVICE_B_BUCKET_SECRET_NAME=xxx SERVICE_C_ACCOUNT=xxx SERVICE_C_BUCKET_SECRET_NAME=xxx cdk deploy --profile primary S3ReplicationDataStackStatefulA S3ReplicationDataStackStatelessA --exclusively"
+}
+```
+
 # Welcome to your CDK TypeScript project
 
 This is a blank project for CDK development with TypeScript.
