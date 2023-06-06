@@ -2,8 +2,8 @@ import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as iam from 'aws-cdk-lib/aws-iam';
-import { CfnOutput, Fn, RemovalPolicy } from 'aws-cdk-lib';
-import { ManagedPolicy } from 'aws-cdk-lib/aws-iam';
+import { CfnOutput, CfnRefElement, Fn, RemovalPolicy } from 'aws-cdk-lib';
+import { ArnPrincipal, ManagedPolicy } from 'aws-cdk-lib/aws-iam';
 import * as secretsManager from 'aws-cdk-lib/aws-secretsmanager';
 import { SecretsManager } from 'aws-sdk';
 
@@ -96,54 +96,45 @@ export class StatefulS3ReplicationDataStackServiceA extends cdk.Stack {
 			`arn:aws:secretsmanager:eu-west-1:${sharedAccountId}:secret:${secretRoleName}`
 		).secretValue.unsafeUnwrap();
 
-		//Here the role is in the same account as the source bucket
 		const replicationRole = iam.Role.fromRoleArn(
 			this,
-			'rep-role',
-			'arn:aws:iam::xxx:role/service-role/xxx'
+			'replication-role',
+			replicationRoleArn
 		);
-		// const replicationRole = iam.Role.fromRoleArn(
-		// 	this,
-		// 	'replication-role',
-		// 	replicationRoleArn
-		// );
 
-		const destinationBucketStatements: iam.PolicyStatement[] =
-			replicationBuckets.map((destinationBucket) => {
-				return new iam.PolicyStatement({
-					resources: [destinationBucket.arnForObjects('*')],
-					actions: [
-						's3:ReplicateObject',
-						's3:ReplicateDelete',
-						's3:ReplicateTags',
-						's3:GetObjectVersionTagging',
-						's3:ObjectOwnerOverrideToBucketOwner',
-					],
-				});
-			});
-
-		const updatedPolicy = new ManagedPolicy(this, 'ammended-rep-role-policy', {
-			statements: [
-				new iam.PolicyStatement({
-					resources: [masterBucket.bucketArn],
-					actions: ['s3:GetReplicationConfiguration', 's3:ListBucket'],
-				}),
-				new iam.PolicyStatement({
-					resources: [masterBucket.arnForObjects('*')],
-					actions: [
-						's3:GetObjectVersion',
-						's3:GetObjectVersionAcl',
-						's3:GetObjectVersionForReplication',
-						's3:GetObjectLegalHold',
-						's3:GetObjectVersionTagging',
-						's3:GetObjectRetention',
-					],
-				}),
-				...destinationBucketStatements,
-			],
-		});
-
-		updatedPolicy.attachToRole(replicationRole);
+		replicationRole.addManagedPolicy(
+			new ManagedPolicy(this, 'amended-policy', {
+				statements: [
+					new iam.PolicyStatement({
+						resources: [masterBucket.bucketArn],
+						actions: ['s3:GetReplicationConfiguration', 's3:ListBucket'],
+					}),
+					new iam.PolicyStatement({
+						resources: [masterBucket.arnForObjects('*')],
+						actions: [
+							's3:GetObjectVersion',
+							's3:GetObjectVersionAcl',
+							's3:GetObjectVersionForReplication',
+							's3:GetObjectLegalHold',
+							's3:GetObjectVersionTagging',
+							's3:GetObjectRetention',
+						],
+					}),
+					...replicationBuckets.map((destinationBucket) => {
+						return new iam.PolicyStatement({
+							resources: [destinationBucket.arnForObjects('*')],
+							actions: [
+								's3:ReplicateObject',
+								's3:ReplicateDelete',
+								's3:ReplicateTags',
+								's3:GetObjectVersionTagging',
+								's3:ObjectOwnerOverrideToBucketOwner',
+							],
+						});
+					}),
+				],
+			})
+		);
 
 		const replicationConfiguration: s3.CfnBucket.ReplicationConfigurationProperty =
 			{
@@ -153,15 +144,11 @@ export class StatefulS3ReplicationDataStackServiceA extends cdk.Stack {
 						return {
 							destination: {
 								bucket: destinationBucket.bucketArn,
-								/**
-								 * Cross-Account Settings
-								 * account: 'account-id',
-								 * accessControlTranslation: { owner: 'account-name' },
-								 */
+								//accessControlTranslation: { owner: 'account-name' },
 								account: destinationBucket.env.account,
 							},
 							status: 'Enabled',
-							priority: index + 1,
+							priority: index++,
 							filter: {
 								prefix: '',
 							},
