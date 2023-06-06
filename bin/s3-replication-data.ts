@@ -14,19 +14,19 @@ import { StatefulS3ReplicationDataStackShared } from '../stateful/shared/shared-
 
 const app = new cdk.App();
 
-const sharedStack = new StatefulS3ReplicationDataStackShared(
+new StatefulS3ReplicationDataStackShared(
 	app,
 	'S3ReplicationDataStackShared',
 	{}
 );
 
-const stackB = new StatefulS3ReplicationDataStackServiceB(
+new StatefulS3ReplicationDataStackServiceB(
 	app,
 	'S3ReplicationDataStackStatefulB',
 	{}
 );
 
-const stackC = new StatefulS3ReplicationDataStackServiceC(
+new StatefulS3ReplicationDataStackServiceC(
 	app,
 	'S3ReplicationDataStackStatefulC',
 	{}

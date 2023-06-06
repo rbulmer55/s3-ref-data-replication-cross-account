@@ -1,7 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as s3 from 'aws-cdk-lib/aws-s3';
-import { CfnOutput, RemovalPolicy, SecretValue } from 'aws-cdk-lib';
+import { CfnOutput, Fn, RemovalPolicy, SecretValue } from 'aws-cdk-lib';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import { ArnPrincipal } from 'aws-cdk-lib/aws-iam';
 import * as secretsManager from 'aws-cdk-lib/aws-secretsmanager';
@@ -88,10 +88,12 @@ export class StatefulS3ReplicationDataStackServiceC extends cdk.Stack {
 			})
 		);
 
-		//output secret name for testing
+		//output secret name to use in other deployments
+		// include the random chars required for lookup
+		// arn:aws:secretsmanager:<Region>:<AccountId>:secret:SecretName-6RandomCharacters
 		new CfnOutput(this, 'cfn-secret-name', {
-			exportName: 'secretName',
-			value: bucketSecret.secretName,
+			exportName: 'secretNameWithRandomChars',
+			value: Fn.select(6, Fn.split(':', bucketSecret.secretArn)),
 		});
 	}
 }

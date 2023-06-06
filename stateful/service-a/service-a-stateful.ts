@@ -2,8 +2,8 @@ import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as iam from 'aws-cdk-lib/aws-iam';
-import { CfnOutput, CfnRefElement, Fn, RemovalPolicy } from 'aws-cdk-lib';
-import { ArnPrincipal, ManagedPolicy } from 'aws-cdk-lib/aws-iam';
+import { RemovalPolicy } from 'aws-cdk-lib';
+import { ManagedPolicy } from 'aws-cdk-lib/aws-iam';
 import * as secretsManager from 'aws-cdk-lib/aws-secretsmanager';
 import { SecretsManager } from 'aws-sdk';
 
@@ -102,8 +102,8 @@ export class StatefulS3ReplicationDataStackServiceA extends cdk.Stack {
 			replicationRoleArn
 		);
 
-		replicationRole.addManagedPolicy(
-			new ManagedPolicy(this, 'amended-policy', {
+		replicationRole.attachInlinePolicy(
+			new iam.Policy(this, 'amended-policy', {
 				statements: [
 					new iam.PolicyStatement({
 						resources: [masterBucket.bucketArn],
