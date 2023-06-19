@@ -4,15 +4,13 @@ import * as nodeLambda from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import { Runtime, Tracing } from 'aws-cdk-lib/aws-lambda';
 import * as path from 'path';
-import { EventType } from 'aws-cdk-lib/aws-s3';
-import { LambdaDestination } from 'aws-cdk-lib/aws-s3-notifications';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import { RetentionDays } from 'aws-cdk-lib/aws-logs';
 import {
 	AwsCustomResource,
 	AwsCustomResourcePolicy,
 	PhysicalResourceId,
 } from 'aws-cdk-lib/custom-resources';
-import { RetentionDays } from 'aws-cdk-lib/aws-logs';
 
 interface CustomProps extends cdk.StackProps {
 	uploadBucket: s3.IBucket;

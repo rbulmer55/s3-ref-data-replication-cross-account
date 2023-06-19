@@ -5,11 +5,20 @@ import { CfnOutput, Fn, SecretValue } from 'aws-cdk-lib';
 import * as secretsManager from 'aws-cdk-lib/aws-secretsmanager';
 import * as kms from 'aws-cdk-lib/aws-kms';
 
-export class StatefulS3ReplicationDataStackShared extends cdk.Stack {
+/**
+ * Name: PreReplication Stack -
+ * Description: Used for deploying resources used by all accounts
+ * Usage: The Replication Configuration requires a Role to exist to add to
+ * 	the bucket policy. The Role is then updated after the destionation and
+ * 	source bucket have been deployed; The bucket ARNs are required in the
+ * 	IAM policy Statements.
+ */
+export class S3ReplicationDataStackPreReplication extends cdk.Stack {
+	public readonly replicationRole: iam.Role;
 	constructor(scope: Construct, id: string, props?: cdk.StackProps) {
 		super(scope, id, props);
 
-		const orgId = process.env.ORG_ID;
+		const { ORG_ID: orgId } = process.env;
 		if (!orgId) {
 			throw new Error('Organisation ID environment not set.');
 		}
@@ -18,7 +27,11 @@ export class StatefulS3ReplicationDataStackShared extends cdk.Stack {
 			assumedBy: new iam.ServicePrincipal('s3.amazonaws.com'),
 			path: '/service-role/',
 			description: 'IAM service role for s3 replication',
+			// Specify the Name here, so stackAStateful can ammend later
+			// Todo: convert/remove magic string
+			roleName: 's3-master-replication-role',
 		});
+		this.replicationRole = replicationRole;
 
 		const secretKey = new kms.Key(this, 'secret-encryption-key', {
 			enableKeyRotation: true,

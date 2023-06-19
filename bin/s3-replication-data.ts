@@ -3,6 +3,9 @@ import 'source-map-support/register';
 
 import * as cdk from 'aws-cdk-lib';
 
+//PreReplicationDeployment
+import { S3ReplicationDataStackPreReplication } from '../stateful/service-a/service-a-pre-replication';
+
 //Stateful
 import { StatefulS3ReplicationDataStackServiceA } from '../stateful/service-a/service-a-stateful';
 import { StatefulS3ReplicationDataStackServiceB } from '../stateful/service-b/service-b-stateful';
@@ -10,13 +13,17 @@ import { StatefulS3ReplicationDataStackServiceC } from '../stateful/service-c/se
 
 //Stateless
 import { StatelessS3ReplicationDataStackServiceA } from '../stateless/service-a/service-a-stateless';
-import { StatefulS3ReplicationDataStackShared } from '../stateful/shared/shared-stateful';
 
 const app = new cdk.App();
 
-new StatefulS3ReplicationDataStackShared(
+/**
+ * Stacks in Deployment Order.
+ * Each Service can be moved to its own repo/Owned by another service team
+ * Together here for example/reference
+ */
+new S3ReplicationDataStackPreReplication(
 	app,
-	'S3ReplicationDataStackShared',
+	'S3ReplicationDataStackPreReplication',
 	{}
 );
 

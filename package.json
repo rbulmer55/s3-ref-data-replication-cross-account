@@ -9,10 +9,14 @@
 		"watch": "tsc -w",
 		"test": "jest",
 		"cdk": "cdk",
-		"deploy-shared": "ORG_ID=o-x  cdk deploy --profile primary S3ReplicationDataStackShared",
-		"deploy-account-b": "ORG_ID=o-x SHARED_ACCOUNT=xxx ROLE_SECRET_NAME=xxx cdk deploy --profile serviceone S3ReplicationDataStackStatefulB --exclusively",
-		"deploy-account-c": "ORG_ID=o-x SHARED_ACCOUNT=xxx ROLE_SECRET_NAME=xxx cdk deploy --profile servicetwo S3ReplicationDataStackStatefulC --exclusively",
-		"deploy-account-a": "ORG_ID=o-x SHARED_ACCOUNT=xxx ROLE_SECRET_NAME=xxx SERVICE_B_ACCOUNT=xxx SERVICE_B_BUCKET_SECRET_NAME=xxx SERVICE_C_ACCOUNT=xxx SERVICE_C_BUCKET_SECRET_NAME=xxx cdk deploy --profile primary S3ReplicationDataStackStatefulA S3ReplicationDataStackStatelessA --exclusively"
+		"deploy-pre": "ORG_ID=o-replace_me  cdk deploy --profile primary S3ReplicationDataStackPreReplication",
+		"deploy-account-b": "ORG_ID=o-replace_me ROLE_ACCOUNT=replace_me ROLE_SECRET=replace_me cdk deploy --profile serviceone S3ReplicationDataStackStatefulB --exclusively",
+		"deploy-account-c": "ORG_ID=o-replace_me ROLE_ACCOUNT=replace_me ROLE_SECRET=replace_me cdk deploy --profile servicetwo S3ReplicationDataStackStatefulC --exclusively",
+		"deploy-account-a": "ORG_ID=o-replace_me ROLE_ACCOUNT=replace_me ROLE_SECRET=replace_me SERVICE_B_ACCOUNT=replace_me SERVICE_B_BUCKET_SECRET=replace_me SERVICE_C_ACCOUNT=replace_me SERVICE_C_BUCKET_SECRET=replace_me cdk deploy --profile primary S3ReplicationDataStackStatefulA S3ReplicationDataStackStatelessA --exclusively",
+		"destroy-pre": "ORG_ID=o-replace_me  cdk destroy --profile primary S3ReplicationDataStackPreReplication",
+		"destroy-account-b": "ORG_ID=o-replace_me ROLE_ACCOUNT=replace_me ROLE_SECRET=replace_me cdk destroy --profile serviceone S3ReplicationDataStackStatefulB --exclusively",
+		"destroy-account-c": "ORG_ID=o-replace_me ROLE_ACCOUNT=replace_me ROLE_SECRET=replace_me cdk destroy --profile servicetwo S3ReplicationDataStackStatefulC --exclusively",
+		"destroy-account-a": "ORG_ID=o-replace_me ROLE_ACCOUNT=replace_me ROLE_SECRET=replace_me SERVICE_B_ACCOUNT=replace_me SERVICE_B_BUCKET_SECRET=replace_me SERVICE_C_ACCOUNT=replace_me SERVICE_C_BUCKET_SECRET=replace_me cdk destroy --profile primary S3ReplicationDataStackStatefulA S3ReplicationDataStackStatelessA --exclusively"
 	},
 	"devDependencies": {
 		"@types/aws-lambda": "^8.10.115",

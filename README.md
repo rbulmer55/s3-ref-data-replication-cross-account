@@ -24,14 +24,14 @@ Therefore we have split the stacks in CDK out to a shared stack which deploys th
 
 ## Deployment
 
-Run the scripts in order- Shared, Account C, Account B, Account A
+Run the scripts in order- Pre, Account C, Account B, Account A
 
 ```
 Scripts:{
-        "deploy-shared": "ORG_ID=o-x  cdk deploy --profile primary S3ReplicationDataStackShared",
-		"deploy-account-b": "ORG_ID=o-x SHARED_ACCOUNT=xxx ROLE_SECRET_NAME=xxx cdk deploy --profile serviceone S3ReplicationDataStackStatefulB --exclusively",
-		"deploy-account-c": "ORG_ID=o-x SHARED_ACCOUNT=xxx ROLE_SECRET_NAME=xxx cdk deploy --profile servicetwo S3ReplicationDataStackStatefulC --exclusively",
-		"deploy-account-a": "ORG_ID=o-x SHARED_ACCOUNT=xxx ROLE_SECRET_NAME=xxx SERVICE_B_ACCOUNT=xxx SERVICE_B_BUCKET_SECRET_NAME=xxx SERVICE_C_ACCOUNT=xxx SERVICE_C_BUCKET_SECRET_NAME=xxx cdk deploy --profile primary S3ReplicationDataStackStatefulA S3ReplicationDataStackStatelessA --exclusively"
+        "deploy-pre": "ORG_ID=o-x  cdk deploy --profile primary S3ReplicationDataStackPreReplication",
+		"deploy-account-b": "ORG_ID=o-x ROLE_ACCOUNT=xxx ROLE_SECRET=xxx cdk deploy --profile serviceone S3ReplicationDataStackStatefulB --exclusively",
+		"deploy-account-c": "ORG_ID=o-x ROLE_ACCOUNT=xxx ROLE_SECRET=xxx cdk deploy --profile servicetwo S3ReplicationDataStackStatefulC --exclusively",
+		"deploy-account-a": "ORG_ID=o-x ROLE_ACCOUNT=xxx ROLE_SECRET=xxx SERVICE_B_ACCOUNT=xxx SERVICE_B_BUCKET_SECRET=xxx SERVICE_C_ACCOUNT=xxx SERVICE_C_BUCKET_SECRET=xxx cdk deploy --profile primary S3ReplicationDataStackStatefulA S3ReplicationDataStackStatelessA --exclusively"
 }
 ```
 
